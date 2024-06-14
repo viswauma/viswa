@@ -1,0 +1,55 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- main  # Trigger the pipeline on commits to the main branch
+
+pool:
+  vmImage: 'ubuntu-latest'  # Use the latest Ubuntu-based VM
+
+variables:
+  buildConfiguration: 'Release'
+  artifactName: 'drop'
+
+steps:
+# Step 1: Checkout the code
+- task: Checkout@v2
+  displayName: 'Checkout Code'
+  inputs:
+    repository: $(Build.Repository.Name)
+
+# Step 2: Set up .NET Core SDK (if you're using .NET)
+- task: UseDotNet@2
+  displayName: 'Set up .NET Core SDK'
+  inputs:
+    packageType: 'sdk'
+    version: '6.x.x'  # Use appropriate version for your project
+
+# Step 3: Restore dependencies
+- script: dotnet restore
+  displayName: 'Restore Dependencies'
+
+# Step 4: Build the project
+- script: dotnet build --configuration $(buildConfiguration)
+  displayName: 'Build Project'
+
+# Step 5: Run tests
+- script: dotnet test --configuration $(buildConfiguration) --no-build --verbosity normal
+  displayName: 'Run Tests'
+  # Step 6: Publish the output (optional, if you want to create an artifact)
+- script: dotnet publish --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)
+  displayName: 'Publish Output'
+
+# Step 7: Deploy the code (example using Azure Web App)
+- task: AzureWebApp@1
+  inputs:
+    azureSubscription: '<Your Azure Subscription>'
+    appName: '<Your Web App Name>'
+    package: '$(Build.ArtifactStagingDirectory)/**/*.zip'
+
+# Step 8: Publish build artifacts (optional, if you want to keep artifacts)
+- publish: $(Build.ArtifactStagingDirectory)
+  artifact: $(artifactName)
+  displayName: 'Publish Build Artifacts'
